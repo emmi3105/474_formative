@@ -1,0 +1,49 @@
+---
+title: "MY474 - Assignment 1 (formative)"
+author: "Candidate Number: 35031"
+date: "2024-01-25"
+output: html_document
+---
+
+```{r setup, include=FALSE} 
+#####################################
+# SETUP
+
+knitr::opts_chunk$set(echo = FALSE) 
+
+library(tidyverse)
+```
+
+## Exercise 1
+
+### Supervised vs. non-supervised learning
+
+The hand coding of each comment can be classified as supervised learning. According to the lecture, an important feature of supervised learning is that the training data is labeled. In our case, the researcher manually labels each comment as on-topic or off-topic, providing the model with labeled data. The researcher then trains an ML model on the previously manually labelled training data, and tests the model on a new data set. Although the new data is not previously labeled, this is still an example of supervised learning, as the researchers have a small, labelled training data set, and a large, unlabeled test data set.
+
+
+### Regression vs. classification
+
+In the example, the researchers are using classification. According to the lecture, classification refers to predicting a categorical value from a finite data set, which is exactly what the researchers are aiming for. They want to determine the most likely label - on-topic or off-topic - for each observation - each comment, categorising this task as a classification problem.
+
+### Parametric vs. non-parametric
+
+It is difficult to specify whether the model is parametric or non-parametric without further information on the algorithm used. Parametric models are usually classical regression models, where the functional form of the model is defined in advance. Non-parametric models do not define their structure prior to seeing the data, which might also include non-linearities and complex interaction terms. The text does not clarify, whether the researcher defined the form of the model prior to running it or not, or whether the model includes linear or non-linear relationships.
+
+## Exercise 2
+
+```{r read in the data}
+# Read in the data from the GitHub repo for this assignment
+urlfile = "https://raw.githubusercontent.com/OxCGRT/covid-policy-dataset/main/data/OxCGRT_compact_national_v1.csv"
+data <- read_csv(url(urlfile))
+
+
+```
+
+
+## Exercise 3
+
+## Appendix: All code in this assignment
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE} 
+
+```
