@@ -11,7 +11,7 @@
 
 <meta name="author" content="Candidate Number: 35031" />
 
-<meta name="date" content="2024-01-25" />
+<meta name="date" content="2024-01-28" />
 
 <title>MY474 - Assignment 1 (formative)</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">MY474 - Assignment 1 (formative)</h1>
 <h4 class="author">Candidate Number: 35031</h4>
-<h4 class="date">2024-01-25</h4>
+<h4 class="date">2024-01-28</h4>
 
 </div>
 
@@ -363,7 +363,7 @@ display: none;
 <h3>Supervised vs. non-supervised learning</h3>
 <p>The hand coding of each comment can be classified as supervised
 learning. According to the lecture, an important feature of supervised
-learning is that the training data is labeled. In our case, the
+learning is that the training data is labeled. In the example, the
 researcher manually labels each comment as on-topic or off-topic,
 providing the model with labeled data. The researcher then trains an ML
 model on the previously manually labelled training data, and tests the
@@ -378,7 +378,7 @@ unlabeled test data set.</p>
 to the lecture, classification refers to predicting a categorical value
 from a finite data set, which is exactly what the researchers are aiming
 for. They want to determine the most likely label - on-topic or
-off-topic - for each observation - each comment, categorising this task
+off-topic - for each observation - each comment - categorising this task
 as a classification problem.</p>
 </div>
 <div id="parametric-vs.-non-parametric" class="section level3">
@@ -396,9 +396,83 @@ or non-linear relationships.</p>
 </div>
 <div id="exercise-2" class="section level2">
 <h2>Exercise 2</h2>
+<p>To find the combination of variables that results in the regression
+model with the highest R-squared value, I wrote a for loop that iterates
+through each combination of independent variables possible, runs the
+regression and calculates the R-squared value. Then, the algorithm
+prints out the function for the model specification associated with the
+highest R-squared. The following formula was found to have the highest
+R-squared:</p>
+<pre><code>## [1] &quot;Model formula with the highest R-squared: outcome ~  x1 + x2 + x3 + x4 + x5&quot;</code></pre>
+<p>Underneath, the summary of the regression for this model
+specification, that uses all five x-variables provided in the data set,
+can be seen.</p>
+<pre><code>## 
+## Call:
+## lm(formula = best_formula, data = data)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -36.973  -1.685   0.908   2.630   8.321 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -2.19962    0.25956  -8.474  &lt; 2e-16 ***
+## x1           0.14890    0.15175   0.981    0.327    
+## x2           4.35717    0.13567  32.116  &lt; 2e-16 ***
+## x3           1.90314    0.39700   4.794 1.89e-06 ***
+## x4          -0.18680    0.13716  -1.362    0.174    
+## x5          -0.01936    0.14064  -0.138    0.891    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 4.346 on 994 degrees of freedom
+## Multiple R-squared:  0.5155, Adjusted R-squared:  0.513 
+## F-statistic: 211.5 on 5 and 994 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>As printed out above, the model that uses all five x-variables from
+the data set as the independent variables has an R-squared of 0.5155.
+That means that approximately 51.55% of the variance in the dependent
+variable <code>outcome</code> can be explained by the independent
+variables <code>x1</code> - <code>x5</code>.</p>
+<p>Notably, only the variables <code>x2</code> and <code>x3</code> have
+a significant correlation coefficient. Both variables have a positive
+correlation with the <code>outcome</code> variable. On average, a
+one-unit increase in <code>x2</code> is associated with an increase of
+4.36 units in the dependent variable. A one-unit increase in
+<code>x3</code> is associated with an increase of 1.90 units in the
+dependent variable.</p>
 </div>
 <div id="exercise-3" class="section level2">
 <h2>Exercise 3</h2>
+<pre class="r"><code># Function that returns the predicted outcome for each observation provided
+
+production_model &lt;- function(input_data) {
+
+  formula &lt;- outcome ~ x1 + x2 + x3 + x4 + x5
+
+  # Fit a linear model using lm with the formula specified above
+  model &lt;- lm(formula, data = input_data)
+
+  # Extract coefficients from the fitted model
+  coefficients &lt;- coef(model)
+
+  # Extract variable names excluding intercept
+  variable_names &lt;- names(coefficients)[-1]
+
+  # Create a matrix with predictors from the data
+  predictor_matrix &lt;- as.matrix(input_data[, variable_names, drop = FALSE])
+
+  # Add a column of 1s for the intercept
+  predictor_matrix &lt;- cbind(1, predictor_matrix)
+
+  # Calculate the predicted outcome for each observation
+  predicted_outcome &lt;- predictor_matrix %*% coefficients
+
+  return(predicted_outcome)
+}
+
+# To run the function on new data, un-comment the following line of code and replace new_data with the name of the data frame
+#production_model(new_data)</code></pre>
 </div>
 <div id="appendix-all-code-in-this-assignment" class="section level2">
 <h2>Appendix: All code in this assignment</h2>
@@ -407,7 +481,102 @@ or non-linear relationships.</p>
 
 knitr::opts_chunk$set(echo = FALSE) 
 
-library(tidyverse)</code></pre>
+library(tidyverse)
+library(readr)
+library(leaps)
+
+# Read in the data from the GitHub repo for this assignment
+url_data = &quot;https://raw.githubusercontent.com/emmi3105/474_formative/main/data/formative_data.csv&quot;
+data &lt;- read_csv(url_data)
+
+# Automatically coding subset variables
+variable_names &lt;- c(&quot;x1&quot;, &quot;x2&quot;, &quot;x3&quot;, &quot;x4&quot;, &quot;x5&quot;)
+
+# Generate all unique combinations of variables
+all_combinations &lt;- lapply(1:length(variable_names), function(i) combn(variable_names, i, simplify = FALSE))
+
+# Convert combinations to strings
+combinations_as_strings &lt;- lapply(all_combinations, function(comb) {
+  sapply(seq_along(comb), function(j) paste(comb[[j]], collapse = &quot; + &quot;))
+})
+
+df_list &lt;- list()
+
+# Loop through all combinations of independent variables and create regression models 
+for (i in 1:length(combinations_as_strings)){
+  combinations_vector &lt;- combinations_as_strings[i]
+  
+  split_vector &lt;- strsplit(combinations_vector[[1]], &#39;&quot;&#39;)
+  
+  for (j in 1:length(split_vector)){
+    formula_vars &lt;- split_vector[j]
+    result &lt;- paste(&quot;outcome ~&quot;, formula_vars)
+    formula &lt;- as.formula(result)
+    model &lt;- lm(formula, data = data)
+    rsquared &lt;- summary(model)$r.squared
+    new_df &lt;- data.frame(subset_vars = formula_vars, rsquared = rsquared)
+    df_list &lt;- c(df_list, list(new_df))
+  }
+}
+
+# Create a list of data frames that hold the R-squared values for all models calculated above
+df_list &lt;- lapply(df_list, function(df) {
+  names(df) &lt;- c(&quot;subset_vars&quot;, &quot;rsquared&quot;)
+  return(df)
+})
+
+# Combine the list of data frames into a single data frame
+my_dataframe &lt;- do.call(rbind, df_list)
+
+# Get the row with the maximum R-squared
+max_rsquared_row &lt;- my_dataframe %&gt;%
+  filter(rsquared == max(rsquared))
+
+max_subset_vars &lt;- max_rsquared_row$subset_vars
+best_answer &lt;- paste(&quot;Model formula with the highest R-squared: outcome ~ &quot;, max_subset_vars)
+
+# Print the formula for the best model specification
+print(best_answer)
+
+# Run the model with the best formula
+best_result &lt;- paste(&quot;outcome ~&quot;, max_subset_vars)
+best_formula &lt;- as.formula(best_result)
+best_model &lt;- lm(best_formula, data = data)
+ 
+summary_best_model &lt;- summary(best_model) 
+
+# Print the summary of the model
+print(summary_best_model) 
+
+# Function that returns the predicted outcome for each observation provided
+
+production_model &lt;- function(input_data) {
+
+  formula &lt;- outcome ~ x1 + x2 + x3 + x4 + x5
+
+  # Fit a linear model using lm with the formula specified above
+  model &lt;- lm(formula, data = input_data)
+
+  # Extract coefficients from the fitted model
+  coefficients &lt;- coef(model)
+
+  # Extract variable names excluding intercept
+  variable_names &lt;- names(coefficients)[-1]
+
+  # Create a matrix with predictors from the data
+  predictor_matrix &lt;- as.matrix(input_data[, variable_names, drop = FALSE])
+
+  # Add a column of 1s for the intercept
+  predictor_matrix &lt;- cbind(1, predictor_matrix)
+
+  # Calculate the predicted outcome for each observation
+  predicted_outcome &lt;- predictor_matrix %*% coefficients
+
+  return(predicted_outcome)
+}
+
+# To run the function on new data, un-comment the following line of code and replace new_data with the name of the data frame
+#production_model(new_data)</code></pre>
 </div>
 
 

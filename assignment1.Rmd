@@ -1,7 +1,7 @@
 ---
 title: "MY474 - Assignment 1 (formative)"
 author: "Candidate Number: 35031"
-date: "2024-01-25"
+date: "2024-01-28"
 output: html_document
 ---
 
@@ -12,18 +12,21 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE) 
 
 library(tidyverse)
+library(readr)
+library(leaps)
+
 ```
 
 ## Exercise 1
 
 ### Supervised vs. non-supervised learning
 
-The hand coding of each comment can be classified as supervised learning. According to the lecture, an important feature of supervised learning is that the training data is labeled. In our case, the researcher manually labels each comment as on-topic or off-topic, providing the model with labeled data. The researcher then trains an ML model on the previously manually labelled training data, and tests the model on a new data set. Although the new data is not previously labeled, this is still an example of supervised learning, as the researchers have a small, labelled training data set, and a large, unlabeled test data set.
+The hand coding of each comment can be classified as supervised learning. According to the lecture, an important feature of supervised learning is that the training data is labeled. In the example, the researcher manually labels each comment as on-topic or off-topic, providing the model with labeled data. The researcher then trains an ML model on the previously manually labelled training data, and tests the model on a new data set. Although the new data is not previously labeled, this is still an example of supervised learning, as the researchers have a small, labelled training data set, and a large, unlabeled test data set.
 
 
 ### Regression vs. classification
 
-In the example, the researchers are using classification. According to the lecture, classification refers to predicting a categorical value from a finite data set, which is exactly what the researchers are aiming for. They want to determine the most likely label - on-topic or off-topic - for each observation - each comment, categorising this task as a classification problem.
+In the example, the researchers are using classification. According to the lecture, classification refers to predicting a categorical value from a finite data set, which is exactly what the researchers are aiming for. They want to determine the most likely label - on-topic or off-topic - for each observation - each comment - categorising this task as a classification problem.
 
 ### Parametric vs. non-parametric
 
@@ -31,16 +34,130 @@ It is difficult to specify whether the model is parametric or non-parametric wit
 
 ## Exercise 2
 
-```{r read in the data}
-# Read in the data from the GitHub repo for this assignment
-urlfile = "https://raw.githubusercontent.com/OxCGRT/covid-policy-dataset/main/data/OxCGRT_compact_national_v1.csv"
-data <- read_csv(url(urlfile))
+To find the combination of variables that results in the regression model with the highest R-squared value, I wrote a for loop that iterates through each combination of independent variables possible, runs the regression and calculates the R-squared value. Then, the algorithm prints out the function for the model specification associated with the highest R-squared. The following formula was found to have the highest R-squared:
 
+```{r read in the data, message=FALSE}
+# Read in the data from the GitHub repo for this assignment
+url_data = "https://raw.githubusercontent.com/emmi3105/474_formative/main/data/formative_data.csv"
+data <- read_csv(url_data)
 
 ```
 
 
+```{r regression models with all combinations}
+# Automatically coding subset variables
+variable_names <- c("x1", "x2", "x3", "x4", "x5")
+
+# Generate all unique combinations of variables
+all_combinations <- lapply(1:length(variable_names), function(i) combn(variable_names, i, simplify = FALSE))
+
+# Convert combinations to strings
+combinations_as_strings <- lapply(all_combinations, function(comb) {
+  sapply(seq_along(comb), function(j) paste(comb[[j]], collapse = " + "))
+})
+
+df_list <- list()
+
+# Loop through all combinations of independent variables and create regression models 
+for (i in 1:length(combinations_as_strings)){
+  combinations_vector <- combinations_as_strings[i]
+  
+  split_vector <- strsplit(combinations_vector[[1]], '"')
+  
+  for (j in 1:length(split_vector)){
+    formula_vars <- split_vector[j]
+    result <- paste("outcome ~", formula_vars)
+    formula <- as.formula(result)
+    model <- lm(formula, data = data)
+    rsquared <- summary(model)$r.squared
+    new_df <- data.frame(subset_vars = formula_vars, rsquared = rsquared)
+    df_list <- c(df_list, list(new_df))
+  }
+}
+
+# Create a list of data frames that hold the R-squared values for all models calculated above
+df_list <- lapply(df_list, function(df) {
+  names(df) <- c("subset_vars", "rsquared")
+  return(df)
+})
+
+# Combine the list of data frames into a single data frame
+my_dataframe <- do.call(rbind, df_list)
+
+```
+
+
+```{r get maximum R-squared}
+# Get the row with the maximum R-squared
+max_rsquared_row <- my_dataframe %>%
+  filter(rsquared == max(rsquared))
+
+max_subset_vars <- max_rsquared_row$subset_vars
+best_answer <- paste("Model formula with the highest R-squared: outcome ~ ", max_subset_vars)
+
+# Print the formula for the best model specification
+print(best_answer)
+
+```
+
+Underneath, the summary of the regression for this model specification, that uses all five x-variables provided in the data set, can be seen.
+
+```{r get best model summary}
+# Run the model with the best formula
+best_result <- paste("outcome ~", max_subset_vars)
+best_formula <- as.formula(best_result)
+best_model <- lm(best_formula, data = data)
+ 
+summary_best_model <- summary(best_model) 
+
+# Print the summary of the model
+print(summary_best_model) 
+
+```
+
+As printed out above, the model that uses all five x-variables from the data set as the independent variables has an R-squared of 0.5155. That means that approximately 51.55% of the variance in the dependent variable `outcome` can be explained by the independent variables `x1` - `x5`.
+
+Notably, only the variables `x2` and `x3` have a significant correlation coefficient. Both variables have a positive correlation with the `outcome` variable. On average, a one-unit increase in `x2` is associated with an increase of 4.36 units in the dependent variable. A one-unit increase in `x3` is associated with an increase of 1.90 units in the dependent variable.
+
+
 ## Exercise 3
+
+
+```{r production model function, echo=TRUE}
+# Function that returns the predicted outcome for each observation provided
+
+production_model <- function(input_data) {
+
+  formula <- outcome ~ x1 + x2 + x3 + x4 + x5
+
+  # Fit a linear model using lm with the formula specified above
+  model <- lm(formula, data = input_data)
+
+  # Extract coefficients from the fitted model
+  coefficients <- coef(model)
+
+  # Extract variable names excluding intercept
+  variable_names <- names(coefficients)[-1]
+
+  # Create a matrix with predictors from the data
+  predictor_matrix <- as.matrix(input_data[, variable_names, drop = FALSE])
+
+  # Add a column of 1s for the intercept
+  predictor_matrix <- cbind(1, predictor_matrix)
+
+  # Calculate the predicted outcome for each observation
+  predicted_outcome <- predictor_matrix %*% coefficients
+
+  return(predicted_outcome)
+}
+
+# To run the function on new data, un-comment the following line of code and replace new_data with the name of the data frame
+#production_model(new_data)
+
+```
+
+
+
 
 ## Appendix: All code in this assignment
 
